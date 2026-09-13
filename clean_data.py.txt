@@ -1,0 +1,135 @@
+import pandas as pd
+import glob
+import os
+
+# ============================================================
+# STEP 1: LOAD ALL 12 CSV FILES
+# ============================================================
+
+print("Loading files...")
+
+files = glob.glob("data/raw/*.csv")
+
+print(f"Found {len(files)} files:")
+for f in files:
+    print(f"  - {os.path.basename(f)}")
+
+df = pd.concat([
+    pd.read_csv(f, dtype={
+        'ride_id':            str,
+        'start_station_id':   str,
+        'end_station_id':     str,
+        'rideable_type':      str,
+        'start_station_name': str,
+        'end_station_name':   str,
+        'member_casual':      str
+    })
+    for f in files
+], ignore_index=True)
+
+print(f"\nTotal rows loaded: {len(df):,}")
+print(f"Columns: {list(df.columns)}\n")
+
+
+# ============================================================
+# STEP 2: INITIAL DATA AUDIT
+# ============================================================
+
+print("=== INITIAL AUDIT ===")
+print(f"Shape: {df.shape}")
+print(f"\nColumn data types:\n{df.dtypes}")
+print(f"\nMissing values per column:\n{df.isnull().sum()}")
+print(f"\nmember_casual values:\n{df['member_casual'].value_counts()}")
+print(f"\nrideable_type values:\n{df['rideable_type'].value_counts()}")
+
+
+# ============================================================
+# STEP 3: FIX DATETIME COLUMNS
+# ============================================================
+
+print("\nConverting datetime columns...")
+
+df['started_at'] = pd.to_datetime(df['started_at'])
+df['ended_at']   = pd.to_datetime(df['ended_at'])
+
+print(f"Date range: {df['started_at'].min()} to {df['started_at'].max()}")
+
+
+# ============================================================
+# STEP 4: ADD CALCULATED COLUMNS
+# ============================================================
+
+print("Adding calculated columns...")
+
+df['ride_length'] = (
+    (df['ended_at'] - df['started_at'])
+    .dt.total_seconds() / 60
+).round(2)
+
+df['day_of_week'] = df['started_at'].dt.dayofweek + 2
+df['day_of_week'] = df['day_of_week'].replace(8, 1)
+df['day_name']    = df['started_at'].dt.day_name()
+df['month']       = df['started_at'].dt.month
+df['month_name']  = df['started_at'].dt.strftime('%B')
+df['hour_of_day'] = df['started_at'].dt.hour
+df['year']        = df['started_at'].dt.year
+
+print("Calculated columns added successfully")
+
+
+# ============================================================
+# STEP 5: CLEAN THE DATA
+# ============================================================
+
+print("\n=== CLEANING ===")
+rows_before = len(df)
+
+df = df.drop_duplicates(subset=['ride_id'])
+print(f"After removing duplicates:     {len(df):,} rows")
+
+df = df[(df['ride_length'] > 0) & (df['ride_length'] <= 1440)]
+print(f"After removing bad durations:  {len(df):,} rows")
+
+test_keywords = ['TEST', 'WAREHOUSE', 'DEPOT', 'CHECK', 'DIVVY CASSETTE']
+test_mask = df['start_station_name'].str.upper().str.contains(
+    '|'.join(test_keywords), na=False
+)
+df = df[~test_mask]
+print(f"After removing test rides:     {len(df):,} rows")
+
+df['member_casual'] = df['member_casual'].str.lower().str.strip()
+df = df[df['member_casual'].isin(['member', 'casual'])]
+print(f"After fixing member_casual:    {len(df):,} rows")
+
+df = df.dropna(subset=['ride_id', 'started_at', 'ended_at', 'member_casual'])
+print(f"After removing missing fields: {len(df):,} rows")
+
+rows_removed = rows_before - len(df)
+print(f"\nRows before cleaning: {rows_before:,}")
+print(f"Rows after cleaning:  {len(df):,}")
+print(f"Rows removed:         {rows_removed:,} ({rows_removed/rows_before*100:.1f}%)")
+
+
+# ============================================================
+# STEP 6: FINAL VALIDATION
+# ============================================================
+
+print("\n=== FINAL VALIDATION ===")
+print(f"Total rows:          {len(df):,}")
+print(f"Unique ride IDs:     {df['ride_id'].nunique():,}")
+print(f"Date range:          {df['started_at'].min()} to {df['started_at'].max()}")
+print(f"Ride length min:     {df['ride_length'].min()}")
+print(f"Ride length max:     {df['ride_length'].max()}")
+print(f"Ride length mean:    {df['ride_length'].mean():.1f} mins")
+print(f"\nmember_casual breakdown:\n{df['member_casual'].value_counts()}")
+print(f"\nMissing values after cleaning:\n{df.isnull().sum()}")
+
+
+# ============================================================
+# STEP 7: EXPORT
+# ============================================================
+
+output_path = "data/processed/cyclistic_cleaned.csv"
+df.to_csv(output_path, index=False, encoding='utf-8')
+print(f"\nCleaned data saved to: {output_path}")
+print(f"Final shape: {df.shape}")

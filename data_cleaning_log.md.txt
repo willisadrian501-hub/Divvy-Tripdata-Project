@@ -1,0 +1,64 @@
+# Data Cleaning Log
+**Project:** Cyclistic Bike-Share Analysis  
+**Author:** Adrian Willis  
+**Tool:** Python (Pandas) in Jupyter Notebook  
+
+---
+
+## Source Data
+- 12 monthly CSV files from Motivate International Inc.
+- Downloaded from the Divvy public data repository
+- Covering January 2023 through December 2023
+
+## Initial Row Count
+~5,779,444 rows across all 12 files combined
+
+---
+
+## Cleaning Steps Applied
+
+### 1. Safe CSV Import
+- Loaded all files using pandas with dtype overrides
+- ride_id, start_station_id, end_station_id forced to string
+- Prevents Excel-style scientific notation and leading zero loss
+
+### 2. Removed Duplicate Ride IDs
+- Checked for and removed any rows with duplicate ride_id values
+- ride_id is the unique identifier for each trip
+
+### 3. Removed Invalid Ride Durations
+- Removed rows where ride_length <= 0 (negative or zero duration)
+- Removed rows where ride_length > 1440 (over 24 hours)
+- These represent docked, stolen, or maintenance bikes
+
+### 4. Removed Test and Maintenance Rides
+- Filtered start_station_name for keywords:
+  TEST, WAREHOUSE, DEPOT, CHECK, DIVVY CASSETTE
+- These are internal Cyclistic operations, not real customer rides
+
+### 5. Standardized member_casual Column
+- Converted all values to lowercase and stripped whitespace
+- Kept only rows containing exactly 'member' or 'casual'
+
+### 6. Removed Missing Critical Fields
+- Dropped any rows missing ride_id, started_at, ended_at, member_casual
+- Station name nulls were retained (common for electric bike trips)
+
+---
+
+## Columns Added
+
+| Column | Formula | Description |
+|---|---|---|
+| ride_length | (ended_at - started_at) in minutes | Duration of each ride |
+| day_of_week | 1=Sunday, 7=Saturday | Day ride started |
+| day_name | Monday, Tuesday etc | Readable day name |
+| month | 1-12 | Month ride started |
+| month_name | January, February etc | Readable month name |
+| hour_of_day | 0-23 | Hour ride started |
+| year | 2023 | Year ride started |
+
+---
+
+## Final Row Count
+~5,629,015 rows (~2.6% removed during cleaning)

@@ -1,0 +1,248 @@
+-- ============================================================
+-- CYCLISTIC BIKE-SHARE ANALYSIS QUERIES
+-- Author: Adrian Willis
+-- Tool: BigQuery SQL
+-- ============================================================
+
+
+-- ============================================================
+-- SANITY CHECK
+-- ============================================================
+
+SELECT
+  COUNT(*)                                        AS total_rows,
+  COUNT(DISTINCT ride_id)                         AS unique_rides,
+  COUNTIF(member_casual = 'member')               AS member_rides,
+  COUNTIF(member_casual = 'casual')               AS casual_rides,
+  ROUND(COUNTIF(member_casual = 'casual') 
+    / COUNT(*) * 100, 1)                          AS pct_casual,
+  ROUND(COUNTIF(member_casual = 'member') 
+    / COUNT(*) * 100, 1)                          AS pct_member,
+  MIN(started_at)                                 AS earliest_ride,
+  MAX(started_at)                                 AS latest_ride
+FROM cyclistic_data.cyclistic_cleaned;
+
+
+-- ============================================================
+-- SECTION 1: RIDE VOLUME
+-- ============================================================
+
+-- Total rides and percentage split
+SELECT
+  member_casual,
+  COUNT(*)                                        AS total_rides,
+  ROUND(COUNT(*) / SUM(COUNT(*)) OVER() * 100, 1) AS pct_of_total
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual
+ORDER BY total_rides DESC;
+
+
+-- Rides by day of week
+SELECT
+  member_casual,
+  day_name,
+  day_of_week,
+  COUNT(*)                                        AS total_rides,
+  ROUND(AVG(ride_length), 1)                      AS avg_ride_mins
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual, day_name, day_of_week
+ORDER BY member_casual, day_of_week;
+
+
+-- Rides by month
+SELECT
+  member_casual,
+  month,
+  month_name,
+  COUNT(*)                                        AS total_rides,
+  ROUND(AVG(ride_length), 1)                      AS avg_ride_mins
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual, month, month_name
+ORDER BY member_casual, month;
+
+
+-- Rides by hour of day
+SELECT
+  member_casual,
+  hour_of_day,
+  COUNT(*)                                        AS total_rides
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual, hour_of_day
+ORDER BY member_casual, hour_of_day;
+
+
+-- ============================================================
+-- SECTION 2: RIDE LENGTH
+-- ============================================================
+
+-- Ride length distribution buckets
+SELECT
+  member_casual,
+  CASE
+    WHEN ride_length <= 5   THEN '1. Under 5 mins'
+    WHEN ride_length <= 10  THEN '2. 5-10 mins'
+    WHEN ride_length <= 20  THEN '3. 10-20 mins'
+    WHEN ride_length <= 30  THEN '4. 20-30 mins'
+    WHEN ride_length <= 60  THEN '5. 30-60 mins'
+    WHEN ride_length <= 120 THEN '6. 1-2 hours'
+    ELSE                         '7. Over 2 hours'
+  END                                             AS ride_length_bucket,
+  COUNT(*)                                        AS total_rides,
+  ROUND(COUNT(*) / SUM(COUNT(*))
+    OVER(PARTITION BY member_casual) * 100, 1)    AS pct_of_user_type
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual, ride_length_bucket
+ORDER BY member_casual, ride_length_bucket;
+
+
+-- Average ride length by day of week
+SELECT
+  member_casual,
+  day_name,
+  day_of_week,
+  ROUND(AVG(ride_length), 1)                      AS avg_ride_mins,
+  COUNT(*)                                        AS total_rides
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual, day_name, day_of_week
+ORDER BY member_casual, day_of_week;
+
+
+-- ============================================================
+-- SECTION 3: BIKE TYPE
+-- ============================================================
+
+SELECT
+  member_casual,
+  rideable_type,
+  COUNT(*)                                        AS total_rides,
+  ROUND(COUNT(*) / SUM(COUNT(*))
+    OVER(PARTITION BY member_casual) * 100, 1)    AS pct_of_user_type,
+  ROUND(AVG(ride_length), 1)                      AS avg_ride_mins
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual, rideable_type
+ORDER BY member_casual, total_rides DESC;
+
+
+-- ============================================================
+-- SECTION 4: STATION ANALYSIS
+-- ============================================================
+
+-- Top 10 casual start stations
+SELECT
+  start_station_name,
+  COUNT(*)                                        AS casual_rides
+FROM cyclistic_data.cyclistic_cleaned
+WHERE member_casual = 'casual'
+  AND start_station_name IS NOT NULL
+GROUP BY start_station_name
+ORDER BY casual_rides DESC
+LIMIT 10;
+
+
+-- Top 10 member start stations
+SELECT
+  start_station_name,
+  COUNT(*)                                        AS member_rides
+FROM cyclistic_data.cyclistic_cleaned
+WHERE member_casual = 'member'
+  AND start_station_name IS NOT NULL
+GROUP BY start_station_name
+ORDER BY member_rides DESC
+LIMIT 10;
+
+
+-- Stations used heavily by casuals but not members
+WITH casual_stations AS (
+  SELECT
+    start_station_name,
+    COUNT(*)                                      AS casual_rides
+  FROM cyclistic_data.cyclistic_cleaned
+  WHERE member_casual = 'casual'
+    AND start_station_name IS NOT NULL
+  GROUP BY start_station_name
+),
+member_stations AS (
+  SELECT
+    start_station_name,
+    COUNT(*)                                      AS member_rides
+  FROM cyclistic_data.cyclistic_cleaned
+  WHERE member_casual = 'member'
+    AND start_station_name IS NOT NULL
+  GROUP BY start_station_name
+)
+SELECT
+  c.start_station_name,
+  c.casual_rides,
+  COALESCE(m.member_rides, 0)                     AS member_rides,
+  ROUND(c.casual_rides /
+    (c.casual_rides + COALESCE(m.member_rides, 0)) * 100, 1) AS pct_casual
+FROM casual_stations c
+LEFT JOIN member_stations m
+  ON c.start_station_name = m.start_station_name
+WHERE c.casual_rides > 500
+ORDER BY pct_casual DESC
+LIMIT 20;
+
+
+-- ============================================================
+-- SECTION 5: SEASONALITY
+-- ============================================================
+
+SELECT
+  member_casual,
+  CASE
+    WHEN month IN (12, 1, 2)  THEN '1. Winter'
+    WHEN month IN (3, 4, 5)   THEN '2. Spring'
+    WHEN month IN (6, 7, 8)   THEN '3. Summer'
+    WHEN month IN (9, 10, 11) THEN '4. Fall'
+  END                                             AS season,
+  COUNT(*)                                        AS total_rides,
+  ROUND(AVG(ride_length), 1)                      AS avg_ride_mins,
+  ROUND(COUNT(*) / SUM(COUNT(*))
+    OVER(PARTITION BY member_casual) * 100, 1)    AS pct_of_annual_rides
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual, season
+ORDER BY member_casual, season;
+
+
+-- ============================================================
+-- SECTION 6: ANALYSIS SUMMARY TABLE
+-- ============================================================
+
+CREATE TABLE cyclistic_data.analysis_summary AS
+
+SELECT
+  'by_day'                                        AS analysis_type,
+  member_casual,
+  day_name                                        AS dimension,
+  CAST(day_of_week AS STRING)                     AS sort_order,
+  COUNT(*)                                        AS total_rides,
+  ROUND(AVG(ride_length), 1)                      AS avg_ride_mins
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual, day_name, day_of_week
+
+UNION ALL
+
+SELECT
+  'by_month'                                      AS analysis_type,
+  member_casual,
+  month_name                                      AS dimension,
+  CAST(month AS STRING)                           AS sort_order,
+  COUNT(*)                                        AS total_rides,
+  ROUND(AVG(ride_length), 1)                      AS avg_ride_mins
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual, month_name, month
+
+UNION ALL
+
+SELECT
+  'by_hour'                                       AS analysis_type,
+  member_casual,
+  CAST(hour_of_day AS STRING)                     AS dimension,
+  CAST(hour_of_day AS STRING)                     AS sort_order,
+  COUNT(*)                                        AS total_rides,
+  ROUND(AVG(ride_length), 1)                      AS avg_ride_mins
+FROM cyclistic_data.cyclistic_cleaned
+GROUP BY member_casual, hour_of_day
+
+ORDER BY analysis_type, member_casual, sort_order;
