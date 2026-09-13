@@ -7,45 +7,53 @@
 
 ## Project Overview
 This project is the Google Data Analytics Professional Certificate capstone case study.
-As a junior data analyst for the fictional bike-share company Cyclistic, I was tasked 
-with analyzing 12 months of ride data to uncover behavioral differences between casual 
-riders and annual members — and use those insights to recommend a marketing strategy 
+As a junior data analyst for the fictional bike-share company Cyclistic, I was tasked
+with analyzing 12 months of ride data to uncover behavioral differences between casual
+riders and annual members — and use those insights to recommend a marketing strategy
 to convert casual riders into members.
 
-The analysis follows the full data analysis process: **Ask → Prepare → Process → 
+The analysis follows the full data analysis process: **Ask → Prepare → Process →
 Analyze → Share → Act.**
 
 ---
 
 ## Key Findings
 
-🏖️ **Casual riders take significantly longer trips** — casual rides averaged nearly 
-double the duration of member rides, suggesting leisure and recreational use rather 
-than functional commuting.
+🏖️ **Casual riders take significantly longer trips** — casual rides averaged
+131 minutes compared to 84 minutes for members, meaning casuals ride for
+nearly 56% longer on average, strongly suggesting leisure and recreational
+use rather than functional commuting.
 
-📍 **Casual riders cluster near tourist and lakefront stations** — the highest volume 
-casual start stations were concentrated near Chicago's Millennium Park, Navy Pier, and 
-lakefront trail, while member hotspots centered around office districts and transit hubs.
+📍 **Casual riders cluster near tourist and lakefront stations** — the highest
+volume casual start stations were concentrated near Chicago's Millennium Park,
+Navy Pier, and the lakefront trail, while member hotspots centered around
+office districts and transit hubs.
 
-❄️ **Casual ridership drops sharply in winter** — casual ride volume fell dramatically 
-between November and February while member ridership remained comparatively stable 
-year-round, confirming that casual use is heavily seasonal and weather-dependent.
+❄️ **Casual ridership is highly seasonal** — casual rides dropped from
+432,000 in peak summer months to just 117,000 in winter, a decline of over
+70%. Member ridership remained comparatively stable year-round, confirming
+that casual use is weather and leisure driven.
+
+📊 **Members dominate overall ride volume** — members accounted for 3,552,430
+rides across the year versus 1,994,749 for casual riders, making up 64% of
+all trips taken on the network.
 
 ---
 
 ## Recommendations
 
-1. **Launch a seasonal or weekend membership pass** targeting casual riders who ride 
-   heavily in summer and on weekends — lower the price barrier between a day pass 
-   and a full annual membership.
+1. **Launch a seasonal or weekend membership pass** targeting casual riders
+   who ride heavily in summer and on weekends. With casual rides peaking at
+   432,000 in summer, there is a large addressable audience to convert before
+   ridership drops off in winter.
 
-2. **Place targeted marketing at high-traffic casual stations** near tourist and 
-   lakefront locations, using messaging that highlights membership savings based on 
-   observed casual usage frequency.
+2. **Place targeted marketing at high-traffic casual stations** near tourist
+   and lakefront locations, using messaging that highlights membership savings
+   based on observed casual usage frequency.
 
-3. **Trigger in-app conversion prompts** after a casual rider's 3rd or 4th ride, 
-   showing a personalized estimate of how much they would save annually with a 
-   membership at their current usage rate.
+3. **Trigger in-app conversion prompts** after a casual rider's 3rd or 4th
+   ride, showing a personalized estimate of how much they would save annually
+   with a membership at their current usage rate.
 
 ---
 
@@ -54,23 +62,22 @@ year-round, confirming that casual use is heavily seasonal and weather-dependent
 | Phase | Tool | Task |
 |---|---|---|
 | Prepare | Excel | Initial file inspection and safe CSV import |
-| Process | Python + Jupyter Notebook | Cleaning and combining 12 months of data |
+| Process | Python + Jupyter Notebook | Cleaning and combining 5.5 million rows of data |
 | Analyze | BigQuery SQL | Aggregations, trends, and summary table creation |
 | Share | Tableau | Interactive dashboards for executive presentation |
 
 ---
 
 ## Data Source
-12 months of Cyclistic trip data provided by Motivate International Inc. under a 
-public license. The dataset contains over 5 million rows of individual ride records 
-across Chicago's bike-share network.
+12 months of Cyclistic trip data provided by Motivate International Inc. under a
+public license. The dataset contained 5,547,179 rows of individual ride records
+across Chicago's bike-share network, reduced to 5,547,179 after cleaning.
 
-> **Note:** Data-privacy restrictions prohibit the use of personally identifiable 
-> information. Individual riders cannot be tracked across sessions or linked to 
+> **Note:** Data-privacy restrictions prohibit the use of personally identifiable
+> information. Individual riders cannot be tracked across sessions or linked to
 > demographic data.
 
 ---
-
 ## Dashboards
 📊 Visualizations created in Tableau — see charts below
 
