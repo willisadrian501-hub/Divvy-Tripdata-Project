@@ -85,15 +85,3 @@ across Chicago's bike-share network.
 
 ---
 
-## Repository Structure
-cyclistic-bikeshare-analysis/
-├── data/
-│   └── processed/        ← cleaned summary CSV
-├── notebooks/
-│   └── cyclistic_cleaning.ipynb
-├── scripts/
-│   └── clean_data.py
-├── visualizations/       ← exported chart images
-├── presentation/
-│   └── cyclistic_slides.pdf
-└── README.md
